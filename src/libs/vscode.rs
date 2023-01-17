@@ -19,29 +19,24 @@ impl Error for FileNotFound {}
 
 fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     debug!("Generating VSCode configuration path");
-    let possibles_paths: Vec<PathBuf>  = Vec::from([[
-        dirs::home_dir().expect("Home not setted."),
-        PathBuf::from(".config/Code/User/settings.json"),
-    ]
-    .iter()
-    .collect(),
-    [
-        dirs::home_dir().expect("Home not setted."),
-        PathBuf::from(".var/app/com.visualstudio.code/config/Code/User/settings.json"),
-    ]
-    .iter()
-    .collect(),
-    ]);
 
-    for path in possibles_paths {
-        if path.exists() {
-            let file_path = path;
-            debug!("Configuration path : {}", &file_path.display());
-            return Ok(file_path);
-        }
+    let mut possibles_paths: Vec<PathBuf> = vec![];
+
+    if let Some(home_path) = dirs::home_dir() {
+        possibles_paths.push(PathBuf::from(format!("{}/.config/Code/User/settings.json", home_path.as_path().to_str().unwrap())));
+        possibles_paths.push(PathBuf::from(format!("{}/.var/app/com.visualstudio.code/config/Code/User/settings.json", home_path.as_path().to_str().unwrap())));
     }
+    else{
+        debug!("Home dir not setted")
+    }
+
+    if let Some(found_path) = possibles_paths.iter().find(|p| p.exists()) {
+        debug!("Configuration path : {}", &found_path.display());
+        return Ok(found_path.clone());
+    }
+
     error!("No configurtation file found");
-    return Err(FileNotFound.into())
+    Err(Box::new(FileNotFound))
 }
 
 
