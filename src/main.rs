@@ -2,7 +2,7 @@ use std::error::Error;
 use std::process;
 
 use clap::Parser;
-use tracing::{error, info, Level};
+use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 pub mod args;
 pub mod libs;
@@ -27,8 +27,7 @@ fn main() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     info!("Usinge {verbosity} level of log");
 
-    if let Err(e) = run(args) {
-        error!("Error during runtime : {e}");
+    if let Err(_) = run(args) {
         process::exit(1);
     }
 }

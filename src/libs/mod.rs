@@ -3,7 +3,7 @@ use tracing::{info, warn};
 mod vscode;
 
 pub fn add(url: String) -> Result<(), Box<dyn Error>> {
-    info!("Adding proxy {url}");
+    warn!("Adding proxy {url} : Not yet implemented");
     Ok(())
 }
 
@@ -13,7 +13,7 @@ pub fn remove() -> Result<(), Box<dyn Error>> {
 }
 
 pub fn show() -> Result<(), Box<dyn Error>> {
-    warn!("Proxy used : Not yet implemented");
+    info!("Showing proxy used");
     vscode::show_file()?;
     Ok(())
 }
