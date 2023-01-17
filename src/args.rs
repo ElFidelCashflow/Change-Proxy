@@ -1,5 +1,4 @@
-use clap::{Parser,Subcommand};
-
+use clap::{ArgAction::Count, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(name = "change-proxy")]
@@ -7,16 +6,16 @@ use clap::{Parser,Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+
+    #[arg(short, long, action = Count, aliases = ["verbose", "verbeux"])]
+    pub verbosity: u8,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-
     #[command(arg_required_else_help = true)]
     #[command(about = "Set the proxy given to all services")]
-    Add {
-        proxy_url: String,
-    },
+    Add { proxy_url: String },
 
     #[command(about = "Remove proxy from all services")]
     Remove,
