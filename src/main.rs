@@ -1,7 +1,11 @@
+use std::error::Error;
+use std::process;
+
 use clap::Parser;
-use tracing::{debug, error, info, trace, warn, Level};
+use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 pub mod args;
+pub mod libs;
 
 fn main() {
     let args = args::Cli::parse();
@@ -23,13 +27,16 @@ fn main() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     info!("Usinge {verbosity} level of log");
 
-    match args.command {
-        args::Commands::Add { proxy_url } => info!("Adding proxy {proxy_url}"),
-        args::Commands::Remove => info!("Removing proxy"),
-        args::Commands::Show => info!("Proxy used : Not yet implemented"),
+    if let Err(e) = run(args) {
+        error!("Error during runtime : {e}");
+        process::exit(1);
     }
-    trace!("Test trace");
-    debug!("Test degbug");
-    warn!("Tests waring");
-    error!("Test error");
+}
+
+fn run(args: args::Cli) -> Result<(), Box<dyn Error>> {
+    match args.command {
+        args::Commands::Add { proxy_url } => libs::add(proxy_url),
+        args::Commands::Remove => libs::remove(),
+        args::Commands::Show => libs::show(),
+    }
 }
