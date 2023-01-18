@@ -72,15 +72,21 @@ pub fn show_proxy() -> Result<(), Box<dyn Error>> {
 pub fn add_proxy(url: String) -> Result<(), Box<dyn Error>> {
     let config_path = get_configuration_path()?;
     let mut content_parsed = get_json_parsed(&config_path)?;
+    debug!("Inserting \"http.proxy\" : {}", &url);
     content_parsed.insert("http.proxy", url)?;
+    debug!("Calling write_file with new content");
     write_file(&config_path, content_parsed.pretty(4).as_str())?;
+    info!("Proxy configuration added for VSCode");
     Ok(())
 }
 
 pub fn remove_proxy() -> Result<(), Box<dyn Error>> {
     let config_path = get_configuration_path()?;
     let mut content_parsed = get_json_parsed(&config_path)?;
+    debug!("Removing the entry \"http.proxy\"");
     content_parsed.remove("http.proxy");
+    debug!("Calling write_file with new content");
     write_file(&config_path, content_parsed.pretty(4).as_str())?;
+    info!("Proxy configuration removed for VSCode");
     Ok(())
 }
