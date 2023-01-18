@@ -7,7 +7,8 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    #[arg(short, long, action = Count, aliases = ["verbose", "verbeux"])]
+    #[arg(global = true, short, long, action = Count, aliases = ["verbose", "verbeux"])]
+    #[arg(help = "Verbose mode (-vv for more)")]
     pub verbosity: u8,
 }
 

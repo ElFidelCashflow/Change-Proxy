@@ -1,10 +1,13 @@
+use std::error::Error;
+use std::process;
+
 use clap::Parser;
-use tracing::{debug, error, info, trace, warn, Level};
+use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
-pub mod args;
+mod libs;
 
 fn main() {
-    let args = args::Cli::parse();
+    let args = libs::args::Cli::parse();
 
     let verbosity: Level;
     match args.verbosity {
@@ -23,13 +26,12 @@ fn main() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
     info!("Usinge {verbosity} level of log");
 
-    match args.command {
-        args::Commands::Add { proxy_url } => info!("Adding proxy {proxy_url}"),
-        args::Commands::Remove => info!("Removing proxy"),
-        args::Commands::Show => info!("Proxy used : Not yet implemented"),
+    if let Err(_) = run(args) {
+        process::exit(1);
     }
-    trace!("Test trace");
-    debug!("Test degbug");
-    warn!("Tests waring");
-    error!("Test error");
+}
+
+fn run(args: libs::args::Cli) -> Result<(), Box<dyn Error>> {
+    libs::vscode::manage_proxy(args.command)?;
+    Ok(())
 }
