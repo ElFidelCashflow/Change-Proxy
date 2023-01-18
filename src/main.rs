@@ -4,11 +4,10 @@ use std::process;
 use clap::Parser;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
-pub mod args;
-pub mod libs;
+mod libs;
 
 fn main() {
-    let args = args::Cli::parse();
+    let args = libs::args::Cli::parse();
 
     let verbosity: Level;
     match args.verbosity {
@@ -32,10 +31,7 @@ fn main() {
     }
 }
 
-fn run(args: args::Cli) -> Result<(), Box<dyn Error>> {
-    match args.command {
-        args::Commands::Add { proxy_url } => libs::add(proxy_url),
-        args::Commands::Remove => libs::remove(),
-        args::Commands::Show => libs::show(),
-    }
+fn run(args: libs::args::Cli) -> Result<(), Box<dyn Error>> {
+    libs::vscode::manage_proxy(args.command)?;
+    Ok(())
 }
