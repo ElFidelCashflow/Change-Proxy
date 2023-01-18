@@ -1,9 +1,12 @@
 use dirs;
+use json::JsonValue;
 use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, error, info, trace};
+
+use super::write_file;
 
 #[derive(Debug, Clone)]
 enum Errors {
@@ -46,16 +49,38 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     Err(Box::new(Errors::FileNotFound))
 }
 
-pub fn show_file() -> Result<(), Box<dyn Error>> {
-    let vscode_config_file_path = get_configuration_path()?;
-    let contents = fs::read_to_string(&vscode_config_file_path)?;
+fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
+    debug!("Reading content of {}", &path.display());
+    let contents = fs::read_to_string(&path)?;
     trace!("Content from file:\n{}", &contents);
     let json_parsed = json::parse(contents.as_str()).unwrap();
     trace!("Json parsed object:\n{}", &json_parsed);
-    if json_parsed["http_proxy"] == json::Null {
+    Ok(json_parsed)
+}
+
+pub fn show_proxy() -> Result<(), Box<dyn Error>> {
+    let vscode_config_file_path = get_configuration_path()?;
+    let json_parsed = get_json_parsed(&vscode_config_file_path)?;
+    if json_parsed["http.proxy"] == json::Null {
         info!("No proxy used");
     } else {
-        info!("Proxy used : {}", json_parsed["http_proxy"]);
+        info!("Proxy used : {}", json_parsed["http.proxy"]);
     }
+    Ok(())
+}
+
+pub fn add_proxy(url: String) -> Result<(), Box<dyn Error>> {
+    let config_path = get_configuration_path()?;
+    let mut content_parsed = get_json_parsed(&config_path)?;
+    content_parsed.insert("http.proxy", url)?;
+    write_file(&config_path, content_parsed.pretty(4).as_str())?;
+    Ok(())
+}
+
+pub fn remove_proxy() -> Result<(), Box<dyn Error>> {
+    let config_path = get_configuration_path()?;
+    let mut content_parsed = get_json_parsed(&config_path)?;
+    content_parsed.remove("http.proxy");
+    write_file(&config_path, content_parsed.pretty(4).as_str())?;
     Ok(())
 }
