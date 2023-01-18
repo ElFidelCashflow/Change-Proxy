@@ -3,19 +3,20 @@ use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
-use tracing::{error, debug, info, trace};
-
+use tracing::{debug, error, info, trace};
 
 #[derive(Debug, Clone)]
-struct FileNotFound;
+enum Errors {
+    FileNotFound,
+    HomeDirMissing,
+}
 
-impl fmt::Display for FileNotFound {
+impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid first item to double")
     }
 }
-impl Error for FileNotFound {}
-
+impl Error for Errors {}
 
 fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     debug!("Generating VSCode configuration path");
@@ -23,11 +24,17 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     let mut possibles_paths: Vec<PathBuf> = vec![];
 
     if let Some(home_path) = dirs::home_dir() {
-        possibles_paths.push(PathBuf::from(format!("{}/.config/Code/User/settings.json", home_path.as_path().to_str().unwrap())));
-        possibles_paths.push(PathBuf::from(format!("{}/.var/app/com.visualstudio.code/config/Code/User/settings.json", home_path.as_path().to_str().unwrap())));
-    }
-    else{
-        debug!("Home dir not setted")
+        possibles_paths.push(PathBuf::from(format!(
+            "{}/.config/Code/User/settings.json",
+            home_path.as_path().to_str().unwrap()
+        )));
+        possibles_paths.push(PathBuf::from(format!(
+            "{}/.var/app/com.visualstudio.code/config/Code/User/settings.json",
+            home_path.as_path().to_str().unwrap()
+        )));
+    } else {
+        debug!("Home dir not setted");
+        return Err(Box::new(Errors::HomeDirMissing));
     }
 
     if let Some(found_path) = possibles_paths.iter().find(|p| p.exists()) {
@@ -36,9 +43,8 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     }
 
     error!("No configurtation file found");
-    Err(Box::new(FileNotFound))
+    Err(Box::new(Errors::FileNotFound))
 }
-
 
 pub fn show_file() -> Result<(), Box<dyn Error>> {
     let vscode_config_file_path = get_configuration_path()?;
