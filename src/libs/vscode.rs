@@ -59,13 +59,13 @@ fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
     Ok(json_parsed)
 }
 
-pub fn manage_proxy(subcommand: Commands) -> Result<(), Box<dyn Error>> {
+pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     let config_path = get_configuration_path()?;
     let mut content_parsed = get_json_parsed(&config_path)?;
     match subcommand {
         Commands::Add { proxy_url } => {
             debug!("Inserting \"http.proxy\" : {}", &proxy_url);
-            content_parsed.insert("http.proxy", proxy_url)?;
+            content_parsed.insert("http.proxy", proxy_url.clone())?;
         }
         Commands::Remove => {
             debug!("Removing the entry \"http.proxy\"");
@@ -78,6 +78,7 @@ pub fn manage_proxy(subcommand: Commands) -> Result<(), Box<dyn Error>> {
             } else {
                 info!("Proxy used : {}", content_parsed["http.proxy"]);
             }
+            return Ok(());
         }
     }
     debug!("Calling write_file with new content");

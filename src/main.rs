@@ -32,6 +32,6 @@ fn main() {
 }
 
 fn run(args: libs::args::Cli) -> Result<(), Box<dyn Error>> {
-    libs::vscode::manage_proxy(args.command)?;
+    libs::vscode::manage_proxy(&args.command)?;
     Ok(())
 }
