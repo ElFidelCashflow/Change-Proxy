@@ -2,7 +2,7 @@ use std::error::Error;
 use std::process;
 
 use clap::Parser;
-use tracing::{info, trace, Level, warn};
+use tracing::{debug, info, trace, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 mod libs;
 
@@ -31,8 +31,11 @@ fn run(args: libs::args::Cli) -> Result<(), Box<dyn Error>> {
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    sudo::with_env(&["HOME"])?;
-    warn!("Running as {:?}", sudo::check());
+    debug!("Running as {:?}", sudo::check());
+    if sudo::check() != sudo::RunningAs::Root {
+        warn!("Upgrading to run as {:?}", sudo::RunningAs::Root);
+        sudo::with_env(&["HOME"])?;
+    }
     trace!("Env HOME : {}", std::env::var("HOME").unwrap());
 
     info!("Usinge {verbosity} level of log");
