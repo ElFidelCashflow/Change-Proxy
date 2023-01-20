@@ -1,4 +1,3 @@
-use dirs;
 use json::JsonValue;
 use std::error::Error;
 use std::fmt;
@@ -52,9 +51,9 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
 
 fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
     debug!("Reading content of {}", &path.display());
-    let contents = fs::read_to_string(&path)?;
+    let contents = fs::read_to_string(path)?;
     trace!("Content from file:\n{}", &contents);
-    let json_parsed = json::parse(contents.as_str()).unwrap();
+    let json_parsed = json::parse(contents.as_str()).expect("Json not valid");
     trace!("Json parsed object:\n{}", &json_parsed);
     Ok(json_parsed)
 }
