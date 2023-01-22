@@ -82,6 +82,6 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     }
     debug!("Calling write_file with new content");
     write_file(&config_path, content_parsed.pretty(4).as_str())?;
-    info!("Proxy configuration added for VSCode");
+    info!("Proxy configuration done for VSCode");
     Ok(())
 }

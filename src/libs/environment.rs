@@ -14,7 +14,7 @@ enum ProxyType {
     Http,
     Https,
     Ftp,
-    NoProxy,
+    // NoProxy,
 }
 
 impl std::fmt::Display for ProxyType {
@@ -23,7 +23,7 @@ impl std::fmt::Display for ProxyType {
             Self::Http => "HTTP_PROXY",
             Self::Https => "HTTPS_PROXY",
             Self::Ftp => "FTP_PROXY",
-            Self::NoProxy => "NO_PROXY",
+            // Self::NoProxy => "NO_PROXY",
         };
         write!(f, "{}", format)
     }
@@ -31,7 +31,7 @@ impl std::fmt::Display for ProxyType {
 
 impl ProxyType {
     pub fn iterator() -> Iter<'static, ProxyType> {
-        static PROXY_TYPES: [ProxyType; 4] = [Http, Https, Ftp, NoProxy];
+        static PROXY_TYPES: [ProxyType; 3] = [Http, Https, Ftp]; //NoProxy
         PROXY_TYPES.iter()
     }
 }
@@ -48,33 +48,30 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     match subcommand {
         Commands::Add { proxy_url } => {
             let proxy_url = format!("{}{}{}", '\"', proxy_url, '\"');
-            let no_proxy_conf = "\"\"".to_string();
+            // let no_proxy_conf = "\"\"".to_string();
             ProxyType::iterator().for_each(|proxy_type| {
-                let proxy_conf = if *proxy_type == NoProxy {
-                    &no_proxy_conf
-                } else {
-                    &proxy_url
-                };
+                // let proxy_conf = if *proxy_type == NoProxy {
+                //     &no_proxy_conf
+                // } else {
+                //     &proxy_url
+                // };
+
                 if let Some((index, _)) = content_as_vec
                     .iter()
                     .enumerate()
                     .find(|line| line.1.contains(format!("{proxy_type}").as_str()))
                 {
-                    debug!("Replacing exisitng configuration of {proxy_type} with {proxy_conf}");
+                    debug!("Replacing exisitng configuration of {proxy_type} with {proxy_url}");
                     trace!("BEFORE :\n{:#?}", content_as_vec);
-                    let new_proxy_line = format!("{}={}", proxy_type, proxy_conf);
+                    let new_proxy_line = format!("{}={}", proxy_type, proxy_url);
                     content_as_vec.remove(index);
                     content_as_vec.insert(index, new_proxy_line);
                     trace!("AFTER :\n{:#?}", content_as_vec);
                 } else {
-                    debug!("Adding new proxy configuration for {proxy_type} with {proxy_conf}");
-                    content_as_vec.push(format!("{proxy_type}={proxy_conf}"));
+                    debug!("Adding new proxy configuration for {proxy_type} with {proxy_url}");
+                    content_as_vec.push(format!("{proxy_type}={proxy_url}"));
                 }
             });
-            dbg!(&content_as_vec);
-            let content_rebuild: String = content_as_vec.join("\n");
-            debug!("Content rebuild : \n{}", &content_rebuild);
-            write_file(&general_env_path, &content_rebuild)?
         }
         Commands::Show => {
             if let Some(url_proxy) = content_as_vec
@@ -85,8 +82,22 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
             } else {
                 info!("No proxy used");
             }
+            return Ok(());
         }
-        Commands::Remove => (),
+        Commands::Remove => {ProxyType::iterator().for_each(|proxy_type| {
+            debug!("Removing configuration for {proxy_type} in /etc/environment");
+            if let Some((index, _)) = content_as_vec
+                .iter()
+                .enumerate()
+                .find(|line| line.1.contains(format!("{proxy_type}").as_str())) {
+                    content_as_vec.remove(index);
+                }
+            });
+        },
     }
-    todo!();
+    let content_rebuild: String = content_as_vec.join("\n");
+    trace!("Content rebuild : \n{}", &content_rebuild);
+    write_file(&general_env_path, &content_rebuild)?;
+    info!("Proxy configuration done for /etc/environment");
+    Ok(())
 }
