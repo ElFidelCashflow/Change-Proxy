@@ -20,10 +20,10 @@ enum ProxyType {
 impl std::fmt::Display for ProxyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let format = match *self {
-            Self::Http => "HTTP_PROXY",
-            Self::Https => "HTTPS_PROXY",
-            Self::Ftp => "FTP_PROXY",
-            // Self::NoProxy => "NO_PROXY",
+            Self::Http => "http_proxy",
+            Self::Https => "https_proxy",
+            Self::Ftp => "ftp_proxy",
+            // Self::NoProxy => "no_proxy",
         };
         write!(f, "{}", format)
     }
@@ -84,16 +84,18 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
             }
             return Ok(());
         }
-        Commands::Remove => {ProxyType::iterator().for_each(|proxy_type| {
-            debug!("Removing configuration for {proxy_type} in /etc/environment");
-            if let Some((index, _)) = content_as_vec
-                .iter()
-                .enumerate()
-                .find(|line| line.1.contains(format!("{proxy_type}").as_str())) {
+        Commands::Remove => {
+            ProxyType::iterator().for_each(|proxy_type| {
+                debug!("Removing configuration for {proxy_type} in /etc/environment");
+                if let Some((index, _)) = content_as_vec
+                    .iter()
+                    .enumerate()
+                    .find(|line| line.1.contains(format!("{proxy_type}").as_str()))
+                {
                     content_as_vec.remove(index);
                 }
             });
-        },
+        }
     }
     let content_rebuild: String = content_as_vec.join("\n");
     trace!("Content rebuild : \n{}", &content_rebuild);
