@@ -1,12 +1,11 @@
+use super::args::Commands;
+use super::write_file;
 use json::JsonValue;
 use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, error, info, trace};
-
-use super::args::Commands;
-use super::write_file;
 
 #[derive(Debug, Clone)]
 enum Errors {

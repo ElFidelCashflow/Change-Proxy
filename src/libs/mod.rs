@@ -1,5 +1,6 @@
 use std::{error::Error, fs::write, path::Path};
 use tracing::{debug, info, trace, warn, Level};
+mod apt;
 pub mod args;
 mod environment;
 mod vscode;
@@ -20,8 +21,9 @@ pub fn write_file(path: &Path, content: &str) -> Result<(), Box<dyn Error>> {
 }
 
 fn manage_proxy(subcommand: &args::Commands) -> Result<(), Box<dyn Error>> {
-    vscode::manage_proxy(subcommand)?;
-    environment::manage_proxy(subcommand)?;
+    // vscode::manage_proxy(subcommand)?;
+    // environment::manage_proxy(subcommand)?;
+    apt::manage_proxy(subcommand)?;
     Ok(())
 }
 

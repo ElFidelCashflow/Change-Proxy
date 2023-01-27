@@ -1,13 +1,13 @@
 use self::ProxyType::*;
+use super::args::Commands;
 use super::write_file;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::slice::Iter;
-
 use tracing::{debug, info, trace};
 
-use super::args::Commands;
+const ETC_PATH: &str = "/etc/environment";
 
 #[derive(PartialEq, Eq)]
 enum ProxyType {
@@ -37,7 +37,7 @@ impl ProxyType {
 }
 
 pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
-    let general_env_path: PathBuf = PathBuf::from("/etc/environment");
+    let general_env_path: PathBuf = PathBuf::from(ETC_PATH);
     let content: String = fs::read_to_string(&general_env_path)?;
     trace!("Content of /etc/environment :\n{}", &content);
     let mut content_as_vec = content
