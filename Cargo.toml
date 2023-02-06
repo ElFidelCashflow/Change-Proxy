@@ -13,6 +13,8 @@ clap = { version = "4.1.1", features = ["derive","cargo"] }
 dirs = "4.0.0"
 file-owner = "0.1.1"
 json = "0.12.4"
+rust-ini = "0.18.0"
 sudo = "0.6.0"
+systemctl = "0.1.9"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"

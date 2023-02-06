@@ -1,11 +1,12 @@
-use json::JsonValue;
 use std::error::Error;
 use std::fmt;
-use std::fs;
 use std::path::PathBuf;
-use tracing::{debug, error, info, trace};
+
+extern crate tracing;
+use tracing::{debug, error, info};
 
 use super::args::Commands;
+use super::get_json_parsed;
 use super::write_file;
 
 #[derive(Debug, Clone)]
@@ -47,15 +48,6 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
 
     error!("No configurtation file found");
     Err(Box::new(Errors::FileNotFound))
-}
-
-fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
-    debug!("Reading content of {}", &path.display());
-    let contents = fs::read_to_string(path)?;
-    trace!("Content from file:\n{}", &contents);
-    let json_parsed = json::parse(contents.as_str()).expect("Json not valid");
-    trace!("Json parsed object:\n{}", &json_parsed);
-    Ok(json_parsed)
 }
 
 pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
