@@ -75,6 +75,7 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     let general_env_path: PathBuf = PathBuf::from(ENV_PATH);
     match subcommand {
         Commands::Add { proxy_url } => {
+            info!("Adding configuration for /etc/environment");
             let proxy_url = format!("{}{}{}", '\"', proxy_url, '\"');
             ProxyType::iterator().for_each(|proxy_type| {
                 for case in [
@@ -111,6 +112,7 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
         Commands::Remove => {
+            info!("Removing configuration for /etc/environment");
             ProxyType::iterator().for_each(|proxy_type| {
                 debug!("Removing configuration for {proxy_type} in /etc/environment");
                 content_as_vec.retain(|line| {

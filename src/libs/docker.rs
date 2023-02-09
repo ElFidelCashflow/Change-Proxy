@@ -22,6 +22,7 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     let mut buf = Vec::new();
     match subcommand {
         Commands::Add { proxy_url: _ } => {
+            info!("Adding proxy configuration for Docker");
             debug!("Making sure that the EnvironmentFile var is set");
             docker_systemd_conf
                 .with_section(Some("Service"))
@@ -35,7 +36,9 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
                 std::str::from_utf8(&buf).unwrap(),
             )?;
         }
-        Commands::Remove => {}
+        Commands::Remove => {
+            info!("Removing proxy configuration for Docker");
+        }
         Commands::Show => {
             let service_section = docker_systemd_conf.section(Some("Service")).unwrap();
             trace!("Service section : {:?}", service_section);

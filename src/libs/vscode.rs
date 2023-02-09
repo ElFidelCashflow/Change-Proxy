@@ -55,11 +55,13 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     let mut content_parsed = get_json_parsed(&config_path)?;
     match subcommand {
         Commands::Add { proxy_url } => {
+            info!("Adding configuration for VSCode");
             debug!("Inserting \"http.proxy\" : {}", &proxy_url);
             content_parsed.insert("http.proxy", proxy_url.clone())?;
         }
         Commands::Remove => {
-            debug!("Removing the entry \"http.proxy\"");
+            info!("Removing configuration for VSCode");
+            debug!("Deleting the entry \"http.proxy\"");
             content_parsed.remove("http.proxy");
             debug!("Calling write_file with new content");
         }
