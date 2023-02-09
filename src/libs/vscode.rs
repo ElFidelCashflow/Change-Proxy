@@ -1,11 +1,12 @@
-use json::JsonValue;
 use std::error::Error;
 use std::fmt;
-use std::fs;
 use std::path::PathBuf;
-use tracing::{debug, error, info, trace};
+
+extern crate tracing;
+use tracing::{debug, error, info};
 
 use super::args::Commands;
+use super::get_json_parsed;
 use super::write_file;
 
 #[derive(Debug, Clone)]
@@ -49,25 +50,18 @@ fn get_configuration_path() -> Result<PathBuf, Box<dyn Error>> {
     Err(Box::new(Errors::FileNotFound))
 }
 
-fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
-    debug!("Reading content of {}", &path.display());
-    let contents = fs::read_to_string(path)?;
-    trace!("Content from file:\n{}", &contents);
-    let json_parsed = json::parse(contents.as_str()).expect("Json not valid");
-    trace!("Json parsed object:\n{}", &json_parsed);
-    Ok(json_parsed)
-}
-
 pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     let config_path = get_configuration_path()?;
     let mut content_parsed = get_json_parsed(&config_path)?;
     match subcommand {
         Commands::Add { proxy_url } => {
+            info!("Adding configuration for VSCode");
             debug!("Inserting \"http.proxy\" : {}", &proxy_url);
             content_parsed.insert("http.proxy", proxy_url.clone())?;
         }
         Commands::Remove => {
-            debug!("Removing the entry \"http.proxy\"");
+            info!("Removing configuration for VSCode");
+            debug!("Deleting the entry \"http.proxy\"");
             content_parsed.remove("http.proxy");
             debug!("Calling write_file with new content");
         }

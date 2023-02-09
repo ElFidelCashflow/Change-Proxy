@@ -1,21 +1,16 @@
-use self::ProxyType::*;
-use super::write_file;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::slice::Iter;
 
-use tracing::{debug, info, trace};
+extern crate tracing;
+use tracing::{debug, info, trace, warn};
 
 use super::args::Commands;
+use super::write_file;
+use super::ProxyType;
 
-#[derive(PartialEq, Eq)]
-enum ProxyType {
-    Http,
-    Https,
-    Ftp,
-    // NoProxy,
-}
+const ENV_PATH: &str = "/etc/environment";
 
 impl std::fmt::Display for ProxyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -23,77 +18,108 @@ impl std::fmt::Display for ProxyType {
             Self::Http => "http_proxy",
             Self::Https => "https_proxy",
             Self::Ftp => "ftp_proxy",
-            // Self::NoProxy => "no_proxy",
+            Self::NoProxy => "no_proxy",
         };
-        write!(f, "{}", format)
+        write!(f, "{format}")
     }
 }
 
 impl ProxyType {
     pub fn iterator() -> Iter<'static, ProxyType> {
-        static PROXY_TYPES: [ProxyType; 3] = [Http, Https, Ftp]; //NoProxy
+        static PROXY_TYPES: [ProxyType; 4] = [
+            ProxyType::Http,
+            ProxyType::Https,
+            ProxyType::Ftp,
+            ProxyType::NoProxy,
+        ];
         PROXY_TYPES.iter()
     }
 }
 
-pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
-    let general_env_path: PathBuf = PathBuf::from("/etc/environment");
-    let content: String = fs::read_to_string(&general_env_path)?;
-    trace!("Content of /etc/environment :\n{}", &content);
-    let mut content_as_vec = content
+fn get_content_as_vec() -> Result<Vec<String>, Box<dyn Error>> {
+    let general_env_path: PathBuf = PathBuf::from(ENV_PATH);
+    let content: String = fs::read_to_string(general_env_path)?;
+    trace!("Content of {ENV_PATH} :\n{}", &content);
+    Ok(content
         .lines()
         .map(|line| line.into())
-        .collect::<Vec<String>>();
+        .collect::<Vec<String>>())
+}
 
+pub fn get_configuration() -> Option<String> {
+    let content_as_vec = get_content_as_vec().ok()?;
+    if let Some(url_proxy) = content_as_vec
+        .iter()
+        .find(|line| line.contains(format!("{}", ProxyType::Http).as_str()))
+    {
+        let url_proxy_stripped = url_proxy
+            .split('=')
+            .last()
+            .unwrap()
+            .to_string()
+            .replace('\"', "");
+        Some(url_proxy_stripped)
+    } else {
+        None
+    }
+}
+
+pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
+    let mut content_as_vec = match get_content_as_vec() {
+        Ok(content_as_vec) => content_as_vec,
+        Err(_) => {
+            warn!("{ENV_PATH} does not exist. Creating file");
+            Vec::new()
+        }
+    };
+    let general_env_path: PathBuf = PathBuf::from(ENV_PATH);
     match subcommand {
         Commands::Add { proxy_url } => {
+            info!("Adding configuration for /etc/environment");
             let proxy_url = format!("{}{}{}", '\"', proxy_url, '\"');
-            // let no_proxy_conf = "\"\"".to_string();
             ProxyType::iterator().for_each(|proxy_type| {
-                // let proxy_conf = if *proxy_type == NoProxy {
-                //     &no_proxy_conf
-                // } else {
-                //     &proxy_url
-                // };
-
-                if let Some((index, _)) = content_as_vec
-                    .iter()
-                    .enumerate()
-                    .find(|line| line.1.contains(format!("{proxy_type}").as_str()))
-                {
-                    debug!("Replacing exisitng configuration of {proxy_type} with {proxy_url}");
-                    trace!("BEFORE :\n{:#?}", content_as_vec);
-                    let new_proxy_line = format!("{}={}", proxy_type, proxy_url);
-                    content_as_vec.remove(index);
-                    content_as_vec.insert(index, new_proxy_line);
-                    trace!("AFTER :\n{:#?}", content_as_vec);
-                } else {
-                    debug!("Adding new proxy configuration for {proxy_type} with {proxy_url}");
-                    content_as_vec.push(format!("{proxy_type}={proxy_url}"));
+                for case in [
+                    format!("{proxy_type}"),
+                    format!("{proxy_type}").to_uppercase(),
+                ] {
+                    match proxy_type {
+                        ProxyType::NoProxy => debug!("{case} : Not yet implemented"),
+                        _ => {
+                            let new_proxy_line = format!("{case}={proxy_url}");
+                            if let Some((index, _)) = content_as_vec
+                                .iter()
+                                .enumerate()
+                                .find(|line| line.1.contains(&case.to_string()))
+                            {
+                                debug!("Replacing existing configuration for {case}");
+                                content_as_vec.remove(index);
+                                content_as_vec.insert(index, new_proxy_line);
+                            } else {
+                                debug!("Adding new configuration");
+                                content_as_vec.push(new_proxy_line);
+                            }
+                        }
+                    };
                 }
             });
         }
         Commands::Show => {
-            if let Some(url_proxy) = content_as_vec
-                .iter()
-                .find(|line| line.contains(format!("{Http}").as_str()))
-            {
-                info!("Proxy used : {}", url_proxy.split('=').last().unwrap());
+            if let Some(url_proxy) = get_configuration() {
+                info!("Proxy used : {}", url_proxy);
             } else {
                 info!("No proxy used");
             }
             return Ok(());
         }
         Commands::Remove => {
+            info!("Removing configuration for /etc/environment");
             ProxyType::iterator().for_each(|proxy_type| {
                 debug!("Removing configuration for {proxy_type} in /etc/environment");
-                if let Some((index, _)) = content_as_vec
-                    .iter()
-                    .enumerate()
-                    .find(|line| line.1.contains(format!("{proxy_type}").as_str()))
-                {
-                    content_as_vec.remove(index);
-                }
+                content_as_vec.retain(|line| {
+                    !line
+                        .to_lowercase()
+                        .contains(format!("{proxy_type}").as_str())
+                });
             });
         }
     }

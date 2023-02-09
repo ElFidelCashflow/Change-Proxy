@@ -1,6 +1,8 @@
+extern crate clap;
+use clap::Parser;
+
 use std::process;
 
-use clap::Parser;
 mod libs;
 
 fn main() {
