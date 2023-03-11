@@ -15,6 +15,7 @@ extern crate tracing_subscriber;
 use tracing::{debug, info, trace, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
+mod apt;
 pub mod args;
 mod docker;
 mod environment;
@@ -37,8 +38,6 @@ pub fn get_json_parsed(path: &PathBuf) -> Result<JsonValue, Box<dyn Error>> {
     Ok(json_parsed)
 }
 
-// pub fn get_ini_parsed(path: &PathBuf)
-
 pub fn write_file(path: &Path, content: &str) -> Result<(), Box<dyn Error>> {
     debug!("Writing file {}", &path.display());
     let (owner, group) = match path.owner_group() {
@@ -57,7 +56,7 @@ pub fn write_file(path: &Path, content: &str) -> Result<(), Box<dyn Error>> {
 
 fn manage_proxy(args: &args::Cli) -> Result<(), Box<dyn Error>> {
     if args.all || args.apt {
-        // apt::manage_proxy(&args.command)?;
+        apt::manage_proxy(&args.command)?;
     }
     if args.all || args.docker {
         docker::manage_proxy(&args.command)?;
