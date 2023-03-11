@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+use std::{collections::HashMap, str::Split};
 
-use tracing::trace;
+use tracing::{debug, trace};
 
 use super::args::Commands;
 // use super::write_file;
@@ -33,22 +33,29 @@ pub fn manage_proxy(subcommand: &Commands) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn parse_apt_config(content: String) -> Scope {
-    let mut apt_configuration = Scope {
-        name: String::from("APT"),
-        content: HashMap::new(),
-    };
-    let get_configuration = Scope {
-        name: String::from("Get"),
-        content: HashMap::from([
-            (String::from("Fix-Broken"), ContentType::Bool(true)),
-            (String::from("Assume-Yes"), ContentType::Bool(true)),
-        ]),
-    };
-    apt_configuration.content.insert(
-        (&get_configuration.name).to_string(),
-        ContentType::Scope(get_configuration),
+fn parse_apt_config(content: String) -> HashMap<String, Scope> {
+    let mut apt_configuration = HashMap::new();
+    let content_splitted = content.split(';');
+    debug!("Content splitted: {:#?}", &content_splitted);
+    content_splitted.for_each(|configuration_line| {
+        let configuration_line_splitted: Split<&str>;
+        if configuration_line.contains("::") {
+            configuration_line_splitted = configuration_line.split("::");
+        } else {
+            configuration_line_splitted = configuration_line.split("{");
+        }
+        let configuration = configuration_line_splitted.last().unwrap();
+        dbg!(configuration);
+    });
+    /*
+    apt_configuration.insert(
+        String::from("APT"),
+        Scope {
+            name: String::from("ATP"),
+            content: HashMap::new(),
+        },
     );
+    */
     apt_configuration
 }
 
@@ -66,7 +73,7 @@ mod tests {
             };
             "#,
         );
-        let scope_parsed = parse_apt_config(content);
+        let dict_scopes_parsed = parse_apt_config(content);
         let scope_goal = Scope {
             name: String::from("APT"),
             content: HashMap::from([(
@@ -77,7 +84,10 @@ mod tests {
                 }),
             )]),
         };
-        assert_eq!(scope_parsed, scope_goal);
+        assert_eq!(
+            dict_scopes_parsed.get(&String::from("APT")),
+            Some(&scope_goal)
+        );
     }
 
     #[test]
@@ -91,7 +101,7 @@ mod tests {
             };
             "#,
         );
-        let scope_parsed = parse_apt_config(content);
+        let dict_scopes_parsed = parse_apt_config(content);
         let scope_goal = Scope {
             name: String::from("APT"),
             content: HashMap::from([(
@@ -105,7 +115,10 @@ mod tests {
                 }),
             )]),
         };
-        assert_eq!(scope_parsed, scope_goal);
+        assert_eq!(
+            dict_scopes_parsed.get(&String::from("APT")),
+            Some(&scope_goal)
+        );
     }
 
     #[test]
@@ -115,7 +128,7 @@ mod tests {
             APT::Get::Assume-Yes "true";
             "#,
         );
-        let scope_parsed = parse_apt_config(content);
+        let dict_scopes_parsed = parse_apt_config(content);
         let scope_goal = Scope {
             name: String::from("APT"),
             content: HashMap::from([(
@@ -126,7 +139,10 @@ mod tests {
                 }),
             )]),
         };
-        assert_eq!(scope_parsed, scope_goal);
+        assert_eq!(
+            dict_scopes_parsed.get(&String::from("APT")),
+            Some(&scope_goal)
+        );
     }
 
     #[test]
@@ -137,7 +153,7 @@ mod tests {
             APT::Get::Fix-Broken "true";
             "#,
         );
-        let scope_parsed = parse_apt_config(content);
+        let dict_scopes_parsed = parse_apt_config(content);
         let scope_goal = Scope {
             name: String::from("APT"),
             content: HashMap::from([(
@@ -151,6 +167,36 @@ mod tests {
                 }),
             )]),
         };
-        assert_eq!(scope_goal, scope_parsed);
+        assert_eq!(
+            dict_scopes_parsed.get(&String::from("APT")),
+            Some(&scope_goal)
+        );
+    }
+
+    #[test]
+    fn complete_hybride() {
+        let content = String::from(
+            r#"
+                APT::Get::{Assume-Yes "true"; Fix-Broken "true"};
+            "#,
+        );
+        let dict_scopes_parsed = parse_apt_config(content);
+        let scope_goal = Scope {
+            name: String::from("APT"),
+            content: HashMap::from([(
+                String::from("Get"),
+                ContentType::Scope(Scope {
+                    name: String::from("Get"),
+                    content: HashMap::from([
+                        (String::from("Assume-Yes"), ContentType::Bool(true)),
+                        (String::from("Fix-Broken"), ContentType::Bool(true)),
+                    ]),
+                }),
+            )]),
+        };
+        assert_eq!(
+            dict_scopes_parsed.get(&String::from("APT")),
+            Some(&scope_goal)
+        );
     }
 }
